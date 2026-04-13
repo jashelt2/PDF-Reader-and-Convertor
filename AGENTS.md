@@ -82,3 +82,8 @@ Build an MVP web app that:
 
 \- If blocked, document the blocker and the smallest next step.
 
+## Environment Reliability
+- Always assume a fresh environment
+- Do not rely on cached dependencies
+- Do not assume database state persists
+- Prefer idempotent setup steps
