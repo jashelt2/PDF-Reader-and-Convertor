@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DocumentStatus {
+  UPLOADED
+  EXTRACTED
+  REVIEWED
+  EXPORTED
+}
+
+enum VersionType {
+  ORIGINAL
+  EXTRACTED
+  EDITED
+  EXPORTED
+}
+
+model Document {
+  id         String            @id @default(cuid())
+  filename   String
+  mimeType   String
+  status     DocumentStatus    @default(UPLOADED)
+  templateId String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  versions   DocumentVersion[]
+  pages      Page[]
+  fields     Field[]
+  tables     Table[]
+  extractionJobs ExtractionJob[]
+  renderJobs RenderJob[]
+}
+
+model DocumentVersion {
+  id           String   @id @default(cuid())
+  documentId   String
+  versionType  VersionType
+  jsonSnapshot Json
+  fileUrl      String?
+  createdAt    DateTime @default(now())
+  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model Page {
+  id         String   @id @default(cuid())
+  documentId String
+  pageNumber Int
+  width      Float
+  height     Float
+  imageUrl   String?
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model Field {
+  id              String   @id @default(cuid())
+  documentId      String
+  pageId          String
+  label           String
+  rawValue        String
+  normalizedValue String
+  fieldType       String
+  confidence      Float
+  bboxX           Float
+  bboxY           Float
+  bboxWidth       Float
+  bboxHeight      Float
+  document        Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model Table {
+  id         String      @id @default(cuid())
+  documentId String
+  pageId     String
+  bboxX      Float
+  bboxY      Float
+  bboxWidth  Float
+  bboxHeight Float
+  document   Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  cells      TableCell[]
+}
+
+model TableCell {
+  id              String  @id @default(cuid())
+  tableId          String
+  rowIndex         Int
+  colIndex         Int
+  rawValue         String
+  normalizedValue  String
+  confidence       Float
+  bboxX            Float
+  bboxY            Float
+  bboxWidth        Float
+  bboxHeight       Float
+  table            Table   @relation(fields: [tableId], references: [id], onDelete: Cascade)
+}
+
+model Template {
+  id          String  @id @default(cuid())
+  name        String
+  version     String
+  description String?
+}
+
+model ExtractionJob {
+  id         String   @id @default(cuid())
+  documentId String
+  status     String
+  provider   String
+  error      String?
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model RenderJob {
+  id         String   @id @default(cuid())
+  documentId String
+  status     String
+  error      String?
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
