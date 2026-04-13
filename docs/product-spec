@@ -1,0 +1,126 @@
+# Product Spec
+
+## Product
+PDF-to-database editor for recurring forms and semi-structured scanned documents.
+
+## Core flow
+1. User uploads a PDF.
+2. System detects whether the PDF is text-native or scanned.
+3. System extracts layout, fields, tables, and bounding boxes.
+4. System stores normalized structured data in Postgres.
+5. User reviews and edits extracted values in the UI.
+6. System exports a PDF by overlaying updated values onto original pages.
+7. System stores a new document version.
+
+## MVP features
+- Upload PDF
+- Extract candidate fields
+- Confidence scoring
+- Review/edit UI
+- Save edits
+- Export edited PDF
+- Download export
+- Version history
+- Support text fields, checkboxes, dates, numbers, and textareas
+
+## Non-goals
+- Perfect support for arbitrary PDFs
+- Handwriting-first extraction
+- Signature replay
+- Complex reflow of all document layouts
+
+## Data model
+### documents
+- id
+- filename
+- mime_type
+- status
+- template_id nullable
+- created_at
+- updated_at
+
+### document_versions
+- id
+- document_id
+- version_type
+- json_snapshot
+- file_url nullable
+- created_at
+
+### pages
+- id
+- document_id
+- page_number
+- width
+- height
+- image_url nullable
+
+### fields
+- id
+- document_id
+- page_id
+- label
+- raw_value
+- normalized_value
+- field_type
+- confidence
+- bbox_x
+- bbox_y
+- bbox_width
+- bbox_height
+
+### tables
+- id
+- document_id
+- page_id
+- bbox_x
+- bbox_y
+- bbox_width
+- bbox_height
+
+### table_cells
+- id
+- table_id
+- row_index
+- col_index
+- raw_value
+- normalized_value
+- confidence
+- bbox_x
+- bbox_y
+- bbox_width
+- bbox_height
+
+### templates
+- id
+- name
+- version
+- description
+
+### extraction_jobs
+- id
+- document_id
+- status
+- provider
+- error nullable
+
+### render_jobs
+- id
+- document_id
+- status
+- error nullable
+
+## Architecture
+- apps/web: Next.js frontend + API routes
+- apps/worker: background processing jobs
+- packages/db: Prisma schema and DB client
+- packages/shared: zod schemas and shared types
+- packages/extraction: OCR/layout provider interface + normalization logic
+- packages/rendering: overlay PDF export
+
+## Acceptance criteria
+- User can upload a PDF
+- Extraction returns structured test data
+- User can edit extracted fields
+- Exported PDF contains updated values in the right positions
+- Build and tests pass
